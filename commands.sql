@@ -27,3 +27,18 @@ KILL <thread_id>;
 
 SELECT THREAD_ID, PROCESSLIST_ID, PROCESSLIST_USER, PROCESSLIST_HOST, PROCESSLIST_DB, PROCESSLIST_INFO 
 FROM performance_schema.threads;
+
+As transações que não executaram COMMIT podem estar mantendo bloqueios. Para identificar essas transações, podemos consultar a tabela INNODB_TRX do information_schema e a tabela data_locks do performance_schema.
+SELECT trx.trx_id, trx.trx_mysql_thread_id, trx.trx_query, trx.trx_state, trx.trx_started
+FROM information_schema.innodb_trx trx
+WHERE trx.trx_state = 'RUNNING';
+
+SELECT dl.ENGINE_TRANSACTION_ID, dl.OBJECT_NAME, dl.LOCK_STATUS, dl.LOCK_TYPE, dl.LOCK_MODE
+FROM performance_schema.data_locks dl
+WHERE dl.ENGINE_TRANSACTION_ID = <trx_id>;
+
+
+SELECT dl.THREAD_ID, dl.OBJECT_SCHEMA, dl.OBJECT_NAME, dl.LOCK_TYPE, dl.LOCK_STATUS, t.PROCESSLIST_ID, t.PROCESSLIST_INFO 
+FROM performance_schema.data_locks dl
+JOIN performance_schema.threads t ON dl.THREAD_ID = t.THREAD_ID;
+
